@@ -1,0 +1,4 @@
+deploy/.env
+volumes/
+backups/
+.idea/

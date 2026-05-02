@@ -1,0 +1,158 @@
+name: prof-medics-chat
+
+services:
+  postgres:
+    image: postgres:16.6-bookworm
+    restart: always
+    user: nobody
+    read_only: true
+    security_opt:
+      - no-new-privileges=true
+    cap_drop:
+      - ALL
+    cpus: 0.75
+    mem_limit: 1g
+    memswap_limit: 1g
+    pids_limit: 256
+    stop_grace_period: 30s
+    stop_signal: SIGINT
+    networks:
+      - db
+    volumes:
+      - ./volumes/postgres/data:/var/lib/postgresql/data:rw
+    tmpfs:
+      - /tmp:size=64m,noexec,nosuid
+      - /var/run/postgresql:size=64m,noexec,nosuid
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      TZ: ${TZ}
+    command:
+      - postgres
+      - -c
+      - shared_buffers=256MB
+      - -c
+      - effective_cache_size=768MB
+      - -c
+      - work_mem=8MB
+      - -c
+      - maintenance_work_mem=64MB
+      - -c
+      - max_connections=80
+      - -c
+      - log_min_duration_statement=500
+      - -c
+      - log_line_prefix=%m [%p] %q%u@%d
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+
+  mattermost:
+    image: mattermost/mattermost-team-edition:10.5
+    restart: always
+    user: nobody
+    read_only: true
+    security_opt:
+      - no-new-privileges=true
+    cap_drop:
+      - ALL
+    cpus: 1.0
+    mem_limit: 1g
+    memswap_limit: 1g
+    pids_limit: 512
+    stop_grace_period: 30s
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - db
+      - web
+    volumes:
+      - ./volumes/mattermost/config:/mattermost/config:rw
+      - ./volumes/mattermost/data:/mattermost/data:rw
+      - ./volumes/mattermost/logs:/mattermost/logs:rw
+      - ./volumes/mattermost/plugins:/mattermost/plugins:rw
+      - ./volumes/mattermost/client-plugins:/mattermost/client/plugins:rw
+      - ./volumes/mattermost/bleve-indexes:/mattermost/bleve-indexes:rw
+    tmpfs:
+      - /tmp:size=128m,noexec,nosuid
+    environment:
+      MM_SQLSETTINGS_DRIVERNAME: postgres
+      MM_SQLSETTINGS_DATASOURCE: "postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}?sslmode=disable&connect_timeout=10"
+      MM_SQLSETTINGS_MAXIDLECONNS: "10"
+      MM_SQLSETTINGS_MAXOPENCONNS: "30"
+      MM_SERVICESETTINGS_SITEURL: ${MM_SITE_URL}
+      MM_SERVICESETTINGS_LISTENADDRESS: ":8065"
+      MM_SERVICESETTINGS_FORWARD80TO443: "false"
+      MM_SERVICESETTINGS_ENABLELINKPREVIEWS: "false"
+      MM_FILESETTINGS_DRIVERNAME: local
+      MM_FILESETTINGS_DIRECTORY: /mattermost/data/
+      MM_FILESETTINGS_MAXFILESIZE: "52428800"
+      MM_LOGSETTINGS_ENABLECONSOLE: "true"
+      MM_LOGSETTINGS_CONSOLEJSON: "false"
+      MM_LOGSETTINGS_CONSOLELEVEL: "INFO"
+      MM_LOGSETTINGS_ENABLEDIAGNOSTICS: "false"
+      MM_TEAMSETTINGS_ENABLEOPENSERVER: "false"
+      MM_TEAMSETTINGS_ENABLEUSERCREATION: "false"
+      MM_PASSWORDSETTINGS_MINIMUMLENGTH: "12"
+      MM_PASSWORDSETTINGS_LOWERCASE: "true"
+      MM_PASSWORDSETTINGS_NUMBER: "true"
+      MM_PASSWORDSETTINGS_UPPERCASE: "true"
+      MM_PASSWORDSETTINGS_SYMBOL: "true"
+      MM_PLUGINSETTINGS_ENABLEMARKETPLACE: "false"
+      MM_PLUGINSETTINGS_ENABLEUPLOADS: "false"
+      MM_EMAILSETTINGS_SENDPUSHNOTIFICATIONS: "false"
+      MM_EMAILSETTINGS_REQUIREEMAILVERIFICATION: "false"
+      MM_RATELIMITSETTINGS_ENABLE: "true"
+      MM_RATELIMITSETTINGS_PERSEC: "10"
+      MM_METRICSETTINGS_ENABLE: "false"
+      TZ: ${TZ}
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://127.0.0.1:8065/api/v4/system/ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 90s
+
+  nginx:
+    image: hub.xtra.vg/med-prof-chat/mattermost-nginx
+    restart: always
+    user: nobody
+    read_only: true
+    security_opt:
+      - no-new-privileges=true
+    cap_drop:
+      - ALL
+    cpus: 0.25
+    mem_limit: 128m
+    memswap_limit: 128m
+    pids_limit: 128
+    stop_grace_period: 15s
+    stop_signal: SIGQUIT
+    depends_on:
+      mattermost:
+        condition: service_healthy
+    networks:
+      - web
+    ports:
+      - "127.0.0.1:8064:8064"
+    tmpfs:
+      - /tmp:size=64m,noexec,nosuid
+      - /var/cache/nginx:size=64m,noexec,nosuid
+      - /var/run:size=16m,noexec,nosuid
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://127.0.0.1:8064/api/v4/system/ping"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+networks:
+  db:
+    internal: true
+  web:
+    internal: true

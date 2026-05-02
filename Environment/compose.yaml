@@ -1,0 +1,17 @@
+﻿name: "med-prof-chat"
+
+services:
+  postgres:
+    image: postgres:16.3-bookworm
+    restart: unless-stopped
+    ports:
+      - 5432:5432
+    environment:
+      POSTGRES_PASSWORD: pass
+
+  mattermost:
+    image: mattermost/mattermost-preview:7.8.1
+    restart: unless-stopped
+    ports:
+      - 8065:8065
+
