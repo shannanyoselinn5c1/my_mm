@@ -1,0 +1,42 @@
+{
+	email {$ACME_EMAIL}
+	admin off
+	servers {
+		trusted_proxies static private_ranges
+	}
+}
+
+{$MM_DOMAIN} {
+	encode zstd gzip
+
+	request_body {
+		max_size 50MB
+	}
+
+	header {
+		Strict-Transport-Security "max-age=31536000; includeSubDomains"
+		X-Frame-Options "SAMEORIGIN"
+		X-Content-Type-Options "nosniff"
+		Referrer-Policy "strict-origin-when-cross-origin"
+		Permissions-Policy "geolocation=(), microphone=(), camera=()"
+		-Server
+	}
+
+	reverse_proxy mattermost:8065 {
+		header_up Host {host}
+		header_up X-Real-IP {remote_host}
+		header_up X-Forwarded-For {remote_host}
+		header_up X-Forwarded-Proto {scheme}
+		flush_interval -1
+		transport http {
+			keepalive 30s
+			keepalive_idle_conns 32
+		}
+	}
+
+	log {
+		output stdout
+		format console
+		level INFO
+	}
+}

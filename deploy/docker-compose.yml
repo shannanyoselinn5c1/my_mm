@@ -85,7 +85,7 @@ services:
       MM_SQLSETTINGS_DATASOURCE: "postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}?sslmode=disable&connect_timeout=10"
       MM_SQLSETTINGS_MAXIDLECONNS: "10"
       MM_SQLSETTINGS_MAXOPENCONNS: "30"
-      MM_SERVICESETTINGS_SITEURL: ${MM_SITE_URL}
+      MM_SERVICESETTINGS_SITEURL: "https://${MM_DOMAIN}"
       MM_SERVICESETTINGS_LISTENADDRESS: ":8065"
       MM_SERVICESETTINGS_FORWARD80TO443: "false"
       MM_SERVICESETTINGS_ENABLELINKPREVIEWS: "false"
@@ -118,41 +118,63 @@ services:
       retries: 5
       start_period: 90s
 
-  nginx:
-    image: hub.xtra.vg/med-prof-chat/mattermost-nginx
+  caddy:
+    image: hub.xtra.vg/prof-medics-chat/mattermost-caddy
     restart: always
     user: nobody
     read_only: true
     security_opt:
       - no-new-privileges=true
     cap_drop:
-      - ALL
+      - AUDIT_WRITE
+      - CHOWN
+      - DAC_OVERRIDE
+      - FOWNER
+      - FSETID
+      - KILL
+      - MKNOD
+      - NET_RAW
+      - SETFCAP
+      - SETGID
+      - SETPCAP
+      - SETUID
+      - SYS_CHROOT
     cpus: 0.25
     mem_limit: 128m
     memswap_limit: 128m
     pids_limit: 128
-    stop_grace_period: 15s
-    stop_signal: SIGQUIT
+    stop_grace_period: 30s
+    stop_signal: SIGTERM
     depends_on:
       mattermost:
         condition: service_healthy
     networks:
       - web
+      - egress
     ports:
-      - "127.0.0.1:8064:8064"
+      - "0.0.0.0:80:80"
+      - "0.0.0.0:443:443"
+      - "0.0.0.0:443:443/udp"
+    volumes:
+      - ./volumes/caddy/data:/data:rw
+      - ./volumes/caddy/config:/config:rw
     tmpfs:
       - /tmp:size=64m,noexec,nosuid
-      - /var/cache/nginx:size=64m,noexec,nosuid
-      - /var/run:size=16m,noexec,nosuid
+    environment:
+      MM_DOMAIN: ${MM_DOMAIN}
+      ACME_EMAIL: ${ACME_EMAIL}
+      XDG_DATA_HOME: /data
+      XDG_CONFIG_HOME: /config
     healthcheck:
-      test: ["CMD", "curl", "-fsS", "http://127.0.0.1:8064/api/v4/system/ping"]
+      test: ["CMD-SHELL", "nc -z 127.0.0.1 443 && nc -z 127.0.0.1 80"]
       interval: 30s
       timeout: 5s
       retries: 5
-      start_period: 30s
+      start_period: 60s
 
 networks:
   db:
     internal: true
   web:
     internal: true
+  egress: {}
