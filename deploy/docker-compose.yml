@@ -78,7 +78,7 @@ services:
       - /tmp:size=128m,noexec,nosuid
     environment:
       MM_SQLSETTINGS_DRIVERNAME: postgres
-      MM_SQLSETTINGS_DATASOURCE: "postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}?sslmode=disable&connect_timeout=10"
+      MM_SQLSETTINGS_DATASOURCE: "host=postgres port=5432 user=${POSTGRES_USER} password=${POSTGRES_PASSWORD} dbname=${POSTGRES_DB} sslmode=disable connect_timeout=10"
       MM_SQLSETTINGS_MAXIDLECONNS: "10"
       MM_SQLSETTINGS_MAXOPENCONNS: "30"
       MM_SERVICESETTINGS_SITEURL: "https://${MM_DOMAIN}"
