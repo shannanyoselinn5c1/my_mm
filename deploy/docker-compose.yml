@@ -14,7 +14,7 @@ services:
     networks:
       - db
     volumes:
-      - ./volumes/postgres/data:/var/lib/postgresql/data:rw
+      - ../volumes/postgres/data:/var/lib/postgresql/data:rw
     tmpfs:
       - /tmp:size=64m,noexec,nosuid
       - /var/run/postgresql:size=64m,noexec,nosuid
@@ -68,12 +68,12 @@ services:
       - db
       - web
     volumes:
-      - ./volumes/mattermost/config:/mattermost/config:rw
-      - ./volumes/mattermost/data:/mattermost/data:rw
-      - ./volumes/mattermost/logs:/mattermost/logs:rw
-      - ./volumes/mattermost/plugins:/mattermost/plugins:rw
-      - ./volumes/mattermost/client-plugins:/mattermost/client/plugins:rw
-      - ./volumes/mattermost/bleve-indexes:/mattermost/bleve-indexes:rw
+      - ../volumes/mattermost/config:/mattermost/config:rw
+      - ../volumes/mattermost/data:/mattermost/data:rw
+      - ../volumes/mattermost/logs:/mattermost/logs:rw
+      - ../volumes/mattermost/plugins:/mattermost/plugins:rw
+      - ../volumes/mattermost/client-plugins:/mattermost/client/plugins:rw
+      - ../volumes/mattermost/bleve-indexes:/mattermost/bleve-indexes:rw
     tmpfs:
       - /tmp:size=128m,noexec,nosuid
     environment:
@@ -152,8 +152,8 @@ services:
       - "0.0.0.0:443:443"
       - "0.0.0.0:443:443/udp"
     volumes:
-      - ./volumes/caddy/data:/data:rw
-      - ./volumes/caddy/config:/config:rw
+      - ../volumes/caddy/data:/data:rw
+      - ../volumes/caddy/config:/config:rw
     tmpfs:
       - /tmp:size=64m,noexec,nosuid
     environment:
