@@ -119,7 +119,7 @@ services:
       start_period: 90s
 
   caddy:
-    image: hub.xtra.vg/prof-medics-chat/mattermost-caddy
+    image: mattermost-caddy:local
     restart: always
     user: nobody
     read_only: true
