@@ -76,6 +76,7 @@ services:
       - ../volumes/mattermost/bleve-indexes:/mattermost/bleve-indexes:rw
     tmpfs:
       - /tmp:size=128m,noexec,nosuid
+      - /var/tmp:size=8m,noexec,nosuid
     environment:
       MM_SQLSETTINGS_DRIVERNAME: postgres
       MM_SQLSETTINGS_DATASOURCE: "host=postgres port=5432 user=${POSTGRES_USER} password=${POSTGRES_PASSWORD} dbname=${POSTGRES_DB} sslmode=disable connect_timeout=10"
@@ -84,6 +85,7 @@ services:
       MM_SERVICESETTINGS_SITEURL: "https://${MM_DOMAIN}"
       MM_SERVICESETTINGS_LISTENADDRESS: ":8065"
       MM_SERVICESETTINGS_FORWARD80TO443: "false"
+      MM_SERVICESETTINGS_ENABLELOCALMODE: "true"
       MM_SERVICESETTINGS_ENABLELINKPREVIEWS: "false"
       MM_FILESETTINGS_DRIVERNAME: local
       MM_FILESETTINGS_DIRECTORY: /mattermost/data/
