@@ -67,6 +67,7 @@ services:
     networks:
       - db
       - web
+      - egress
     volumes:
       - ../volumes/mattermost/config:/mattermost/config:rw
       - ../volumes/mattermost/data:/mattermost/data:rw
@@ -103,7 +104,9 @@ services:
       MM_PASSWORDSETTINGS_SYMBOL: "true"
       MM_PLUGINSETTINGS_ENABLEMARKETPLACE: "false"
       MM_PLUGINSETTINGS_ENABLEUPLOADS: "false"
-      MM_EMAILSETTINGS_SENDPUSHNOTIFICATIONS: "false"
+      MM_EMAILSETTINGS_SENDPUSHNOTIFICATIONS: "true"
+      MM_EMAILSETTINGS_PUSHNOTIFICATIONSERVER: "https://push.mattermost.com"
+      MM_EMAILSETTINGS_PUSHNOTIFICATIONCONTENTS: "id_loaded"
       MM_EMAILSETTINGS_REQUIREEMAILVERIFICATION: "false"
       MM_RATELIMITSETTINGS_ENABLE: "true"
       MM_RATELIMITSETTINGS_PERSEC: "10"
