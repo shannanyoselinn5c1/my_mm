@@ -5,11 +5,6 @@ services:
     image: postgres:16.6-bookworm
     restart: always
     user: "999:999"
-    read_only: true
-    security_opt:
-      - no-new-privileges=true
-    cap_drop:
-      - ALL
     cpus: 0.75
     mem_limit: 1g
     memswap_limit: 1g

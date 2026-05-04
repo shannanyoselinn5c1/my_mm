@@ -154,11 +154,11 @@ gunzip -c backups/db-YYYY-MM-DD.sql.gz | \
 3. **Caddy подключён к `egress`-сети с интернетом** — необходимо для запросов к
    `acme-v02.api.letsencrypt.org` и OCSP. Postgres и Mattermost интернет не получают.
 
-4. **Стандартные образы postgres и mattermost** ориентированы на запуск от собственных
-   пользователей (postgres uid 999, mattermost uid 2000). При `user: nobody` контейнеры
-   стартуют без chown — поэтому обязательна предварительная подготовка прав на `volumes/`
-   (см. бутстрап п. 2). Если возникнут проблемы — согласовать исключение по п. 1.5
-   либо вернуть стандартного пользователя сервиса (`user: "999"` / `user: "2000"`).
+4. **Postgres запускается под штатным `user: "999:999"`** (а не `nobody`), без `read_only: true`,
+   `cap_drop: ALL` и `no-new-privileges`. Связка строгого регламента с официальным
+   postgres-образом на практике вызывает повторяющиеся проблемы с правами на bind mount
+   и `initdb chmod`. Отступление от пп. 4.6, 4.7, 4.17 — согласовывается по п. 1.5.
+   Mattermost и Caddy ужесточения сохраняют.
 
 5. **Caddy под `user: nobody` + `no-new-privileges=true`**: бинарь Caddy в alpine-образе
    имеет file capability `cap_net_bind_service=+ep`, поэтому может слушать 80/443 от
