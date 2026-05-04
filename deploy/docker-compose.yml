@@ -4,7 +4,7 @@ services:
   postgres:
     image: postgres:16.6-bookworm
     restart: always
-    user: nobody
+    user: "999:999"
     read_only: true
     security_opt:
       - no-new-privileges=true
