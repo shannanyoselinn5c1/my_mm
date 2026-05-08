@@ -93,9 +93,35 @@ Caddy автоматически:
 
 - `db` (internal) — postgres + mattermost. Изолирован от интернета.
 - `web` (internal) — mattermost + caddy. Внутренняя связь между reverse proxy и приложением.
-- `egress` — caddy + mattermost. Caddy: ACME (Let's Encrypt) и OCSP.
-  Mattermost: отправка push-уведомлений на `push-test.mattermost.com`.
+- `mail` (internal) — mattermost + postfix. SMTP для email-уведомлений и инвайтов.
+- `egress` — caddy + mattermost + postfix. Caddy: ACME (Let's Encrypt) и OCSP.
+  Mattermost: push-уведомления. Postfix: исходящая отправка email.
 - Marketplace-плагины, link previews и diagnostics в Mattermost отключены.
+
+## SMTP / Email
+
+Для отправки email-уведомлений и инвайтов используется собственный Postfix (send-only).
+Postfix автоматически генерирует DKIM-ключи при первом запуске.
+
+### DNS-записи (обязательно)
+
+В панели Timeweb Cloud → DNS для домена `prof-medics.ru`:
+
+| Тип | Имя | Значение |
+|---|---|---|
+| A | `mail` | `<IP сервера>` |
+| TXT | `@` | `v=spf1 a a:mail.prof-medics.ru ~all` |
+| TXT | `mail._domainkey` | `v=DKIM1; k=rsa; p=<ключ из контейнера>` |
+| TXT | `_dmarc` | `v=DMARC1; p=quarantine; rua=mailto:admin@prof-medics.ru` |
+
+PTR-запись (Reverse DNS): настраивается в Timeweb Cloud → Cloud Серверы → Сеть.
+
+### Получение DKIM-ключа
+
+```bash
+docker compose -f deploy/docker-compose.yml exec postfix \
+  cat /etc/opendkim/keys/prof-medics.ru/mail.txt
+```
 
 ## Бэкап
 
