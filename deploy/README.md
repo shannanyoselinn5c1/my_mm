@@ -191,3 +191,11 @@ gunzip -c backups/db-YYYY-MM-DD.sql.gz | \
    непривилегированного пользователя. Если в конкретном ядре эта связка ломается,
    фолбэк — `sudo sysctl -w net.ipv4.ip_unprivileged_port_start=80` на хосте
    (с записью в `/etc/sysctl.d/99-caddy.conf` для постоянства).
+
+6. **Postfix запускается без `read_only: true`**: образ `boky/postfix` при старте генерирует
+   конфигурацию Postfix и OpenDKIM в `/etc/postfix`, `/etc/opendkim`, `/var/lib/postfix` и
+   `/var/run`. Монтирование всех этих путей через tmpfs ненадёжно и зависит от внутренней
+   структуры образа. Остальные ужесточения сохранены: `no-new-privileges`, `cap_drop: ALL`,
+   `cap_add: NET_BIND_SERVICE`, лимиты ресурсов. Контейнер подключён к `mail` (internal)
+   для связи с Mattermost и к `egress` для исходящей отправки.
+   TODO: при переходе на production-образ рассмотреть `read_only: true` с полным набором tmpfs.
