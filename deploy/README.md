@@ -92,10 +92,10 @@ Caddy автоматически:
 ## Сетевая модель
 
 - `db` (internal) — postgres + mattermost. Изолирован от интернета.
-- `web` (internal) — mattermost + caddy. У mattermost нет исходящего интернета.
-- `egress` — только caddy. Нужен для ACME (Let's Encrypt) и OCSP.
-- Push-уведомления, marketplace-плагины, link previews и diagnostics в Mattermost отключены —
-  для них потребовался бы исходящий интернет, а у mattermost его нет по дизайну.
+- `web` (internal) — mattermost + caddy. Внутренняя связь между reverse proxy и приложением.
+- `egress` — caddy + mattermost. Caddy: ACME (Let's Encrypt) и OCSP.
+  Mattermost: отправка push-уведомлений на `push-test.mattermost.com`.
+- Marketplace-плагины, link previews и diagnostics в Mattermost отключены.
 
 ## Бэкап
 
