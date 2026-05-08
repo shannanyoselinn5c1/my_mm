@@ -191,7 +191,6 @@ services:
     image: boky/postfix:latest
     container_name: prof-medics-postfix
     restart: always
-    read_only: true
     security_opt:
       - no-new-privileges=true
     cap_drop:
@@ -212,9 +211,6 @@ services:
       TZ: ${TZ}
     volumes:
       - ../volumes/postfix/dkim:/etc/opendkim/keys:rw
-    tmpfs:
-      - /tmp:size=16m,noexec,nosuid
-      - /var/spool/postfix:size=32m
     networks:
       - mail
       - egress
