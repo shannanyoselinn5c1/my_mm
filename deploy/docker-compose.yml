@@ -4,7 +4,12 @@ services:
   postgres:
     image: postgres:16.6-bookworm
     restart: always
-    user: "999:999"
+    user: nobody
+    read_only: true
+    security_opt:
+      - no-new-privileges=true
+    cap_drop:
+      - ALL
     cpus: 0.75
     mem_limit: 1g
     memswap_limit: 1g
@@ -14,7 +19,7 @@ services:
     networks:
       - db
     volumes:
-      - ../volumes/postgres/data:/var/lib/postgresql/data:rw
+      - ../.deploy/volumes/postgres/data:/var/lib/postgresql/data:rw
     tmpfs:
       - /tmp:size=64m,noexec,nosuid
       - /var/run/postgresql:size=64m,noexec,nosuid
@@ -48,7 +53,7 @@ services:
       start_period: 30s
 
   mattermost:
-    image: mattermost/mattermost-team-edition:10.5
+    image: mattermost/mattermost-team-edition:10.5.14
     restart: always
     user: nobody
     read_only: true
@@ -70,15 +75,16 @@ services:
       - egress
       - mail
     volumes:
-      - ../volumes/mattermost/config:/mattermost/config:rw
-      - ../volumes/mattermost/data:/mattermost/data:rw
-      - ../volumes/mattermost/logs:/mattermost/logs:rw
-      - ../volumes/mattermost/plugins:/mattermost/plugins:rw
-      - ../volumes/mattermost/client-plugins:/mattermost/client/plugins:rw
-      - ../volumes/mattermost/bleve-indexes:/mattermost/bleve-indexes:rw
+      - ../.deploy/volumes/mattermost/config:/mattermost/config:rw
+      - ../.deploy/volumes/mattermost/data:/mattermost/data:rw
+      - ../.deploy/volumes/mattermost/logs:/mattermost/logs:rw
+      - ../.deploy/volumes/mattermost/plugins:/mattermost/plugins:rw
+      - ../.deploy/volumes/mattermost/client-plugins:/mattermost/client/plugins:rw
+      - ../.deploy/volumes/mattermost/bleve-indexes:/mattermost/bleve-indexes:rw
     tmpfs:
       - /tmp:size=128m,noexec,nosuid
       - /var/tmp:size=8m,noexec,nosuid
+      - /mattermost/prepackaged_plugins:size=1m,noexec,nosuid
     environment:
       MM_SQLSETTINGS_DRIVERNAME: postgres
       MM_SQLSETTINGS_DATASOURCE: "host=postgres port=5432 user=${POSTGRES_USER} password=${POSTGRES_PASSWORD} dbname=${POSTGRES_DB} sslmode=disable connect_timeout=10"
@@ -108,6 +114,7 @@ services:
       MM_PASSWORDSETTINGS_SYMBOL: "true"
       MM_PLUGINSETTINGS_ENABLEMARKETPLACE: "false"
       MM_PLUGINSETTINGS_ENABLEUPLOADS: "false"
+      MM_PLUGINSETTINGS_AUTOMATICPREPACKAGEDPLUGINS: "false"
       MM_EMAILSETTINGS_SENDPUSHNOTIFICATIONS: "true"
       MM_EMAILSETTINGS_PUSHNOTIFICATIONSERVER: "https://push-test.mattermost.com"
       MM_EMAILSETTINGS_PUSHNOTIFICATIONCONTENTS: "id_loaded"
@@ -134,7 +141,7 @@ services:
       start_period: 90s
 
   caddy:
-    image: mattermost-caddy:local
+    image: hub.xtra.vg/prof-medics-chat/mattermost-caddy:2.8.4
     restart: always
     user: nobody
     read_only: true
@@ -171,8 +178,8 @@ services:
       - "0.0.0.0:443:443"
       - "0.0.0.0:443:443/udp"
     volumes:
-      - ../volumes/caddy/data:/data:rw
-      - ../volumes/caddy/config:/config:rw
+      - ../.deploy/volumes/caddy/data:/data:rw
+      - ../.deploy/volumes/caddy/config:/config:rw
     tmpfs:
       - /tmp:size=64m,noexec,nosuid
     environment:
@@ -188,8 +195,7 @@ services:
       start_period: 60s
 
   postfix:
-    image: boky/postfix:latest
-    container_name: prof-medics-postfix
+    image: boky/postfix:v5.1.0
     restart: always
     security_opt:
       - no-new-privileges=true
@@ -216,7 +222,7 @@ services:
       DKIM_SELECTOR: mail
       TZ: ${TZ}
     volumes:
-      - ../volumes/postfix/dkim:/etc/opendkim/keys:rw
+      - ../.deploy/volumes/postfix/dkim:/etc/opendkim/keys:rw
     networks:
       - mail
       - egress

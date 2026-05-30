@@ -1,5 +1,7 @@
 deploy/.env
-volumes/
+.deploy/
 backups/
 .idea/
 *.png
+collect-logs.sh
+deploy_req.txt

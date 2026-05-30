@@ -1,0 +1,6 @@
+.deploy/
+volumes/
+backups/
+.idea/
+Environment/
+*.png
