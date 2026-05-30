@@ -1,7 +1,9 @@
 deploy/.env
-.deploy/
+deploy/volumes/
 backups/
 .idea/
 *.png
+*.tgz
 collect-logs.sh
+diag-postgres.sh
 deploy_req.txt

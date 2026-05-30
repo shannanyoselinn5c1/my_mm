@@ -1,5 +1,4 @@
-.deploy/
-volumes/
+deploy/volumes/
 backups/
 .idea/
 Environment/

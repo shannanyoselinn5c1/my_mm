@@ -12,10 +12,10 @@ deploy/
   Dockerfile           # образ mattermost-caddy (target: mattermost-caddy)
   .env / .env.example
   README.md
+  volumes/             # bind mounts на хосте (создаются на бутстрапе; в .gitignore)
 caddy/
   Caddyfile            # копируется внутрь mattermost-caddy
 .dockerignore          # минимальный, контекст сборки = корень репо (п. 8)
-.deploy/volumes/       # bind mounts на хосте (создаются на бутстрапе, п. 4.8)
 ```
 
 ## Бутстрап (выполняется один раз перед первым запуском)
@@ -31,19 +31,24 @@ caddy/
    - `MM_DOMAIN` — полное имя без протокола, например `chat.example.com`. Должно резолвиться в публичный IP сервера (см. ниже про DNS).
    - `ACME_EMAIL` — email для уведомлений Let's Encrypt о просрочке (используется только LE, наружу не публикуется).
 
-2. Создать директории под bind mounts (в `.deploy/volumes`, п. 4.8) с правами для UID `nobody` (65534):
+2. Создать директории под bind mounts (в `deploy/volumes`) с правами для UID `nobody` (65534).
+   Команды выполняются из корня репозитория:
 
    ```
-   sudo mkdir -p .deploy/volumes/postgres/data \
-                 .deploy/volumes/mattermost/{config,data,logs,plugins,client-plugins,bleve-indexes} \
-                 .deploy/volumes/caddy/{data,config} \
-                 .deploy/volumes/postfix/dkim
-   sudo chown -R 65534:65534 .deploy/volumes
-   sudo chmod 700 .deploy/volumes/postgres/data
+   sudo mkdir -p deploy/volumes/postgres/data \
+                 deploy/volumes/mattermost/{config,data,logs,plugins,client-plugins,bleve-indexes} \
+                 deploy/volumes/caddy/{data,config} \
+                 deploy/volumes/postfix/dkim
+   sudo chown -R 65534:65534 deploy/volumes
+   sudo chmod 700 deploy/volumes/postgres/data
    ```
 
-   Postgres теперь работает под `user: nobody`, поэтому каталог его данных должен
-   принадлежать UID 65534 (`chown` выше) — иначе `initdb` при первом старте упадёт на правах.
+   Postgres работает под `user: nobody`, поэтому каталог его данных должен
+   принадлежать UID 65534 (`chown` выше) — иначе `initdb` при первом старте упадёт на правах
+   (`mkdir: cannot create directory '/var/lib/postgresql/data/pgdata': Permission denied`).
+   Каталог в compose смонтирован как `./volumes/...` (относительно `deploy/`), то есть на хосте
+   это `deploy/volumes/...` — создавайте и `chown`-айте именно его, иначе docker создаст путь
+   заново под `root` и postgres не сможет в него писать.
 
 3. Подготовить DNS: A-запись `${MM_DOMAIN}` → публичный IP сервера. Проверка с локальной машины:
 
@@ -87,7 +92,7 @@ docker compose -f deploy/docker-compose.yml logs -f caddy
 Caddy автоматически:
 - получает сертификат при первом обращении к домену (HTTP-01 challenge на 80-м порту);
 - обновляет сертификат за ~30 дней до истечения;
-- хранит сертификат и состояние ACME в `./.deploy/volumes/caddy/data` — этот каталог **обязательно**
+- хранит сертификат и состояние ACME в `deploy/volumes/caddy/data` — этот каталог **обязательно**
   должен переживать перезапуски, иначе при каждом рестарте будет новый запрос к LE и риск
   упереться в rate limit (5 сертификатов на домен в неделю).
 
@@ -141,7 +146,7 @@ docker compose -f deploy/docker-compose.yml exec -T postgres \
 
 ```
 sudo tar czf backups/mm-files-$(date +%F).tar.gz \
-    .deploy/volumes/mattermost/data .deploy/volumes/mattermost/config .deploy/volumes/caddy/data
+    deploy/volumes/mattermost/data deploy/volumes/mattermost/config deploy/volumes/caddy/data
 ```
 
 Восстановление БД (на пустую новую установку, до первого старта mattermost):
@@ -190,7 +195,13 @@ gunzip -c backups/db-YYYY-MM-DD.sql.gz | \
    пока нет. Формат имени образа соблюдён (`hub.xtra.vg/prof-medics-chat/mattermost-caddy`, п. 4.2).
    Временное отклонение до появления реестра.
 
-4. **Postfix: root + `cap_add` + без `read_only`** (пп. 4.6, 4.7, 4.19). Это свойство
+4. **Bind mounts расположены в `deploy/volumes`**, а не в `.deploy/volumes`, как требует п. 4.8;
+   из-за этого в каталоге `deploy/` присутствует не только `Dockerfile`/`docker-compose.yml`/`.env`/`README.md`
+   (отступление от п. 2.3). Расположение томов внутри `deploy/` — требование куратора.
+   Каталог `deploy/volumes` добавлен в `.gitignore` (рантайм-данные в репозиторий не попадают)
+   и в `.dockerignore` (не входит в контекст сборки).
+
+5. **Postfix: root + `cap_add` + без `read_only`** (пп. 4.6, 4.7, 4.19). Это свойство
    архитектуры Postfix (демон `master` стартует под root, слушает привилегированные порты,
    раздаёт работу процессам под разными uid) и образа `boky/postfix` (генерирует конфиг и
    DKIM-ключи на старте в `/etc/postfix`, `/etc/opendkim`, `/var/lib/postfix`, `/var/run`;
@@ -204,9 +215,9 @@ gunzip -c backups/db-YYYY-MM-DD.sql.gz | \
 
 **Приведены к норме:** Postgres, Mattermost и Caddy запускаются под `user: nobody`,
 `read_only: true`, `security_opt: no-new-privileges`, `cap_drop: ALL` (у Caddy — с явным
-списком, см. п. 2). Bind mounts вынесены в `.deploy/volumes` (п. 4.8), внешние образы
-запинены (п. 4.2), сети сегментированы: `db`/`web`/`mail` — `internal`, интернет (`egress`)
-только у Caddy, Mattermost и Postfix.
+списком, см. п. 2). Bind mounts вынесены в `deploy/volumes` (см. отклонение п. 4 выше),
+внешние образы запинены (п. 4.2), сети сегментированы: `db`/`web`/`mail` — `internal`,
+интернет (`egress`) только у Caddy, Mattermost и Postfix.
 
 ### Следствия `read_only` у Mattermost
 

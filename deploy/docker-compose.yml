@@ -19,7 +19,7 @@ services:
     networks:
       - db
     volumes:
-      - ../.deploy/volumes/postgres/data:/var/lib/postgresql/data:rw
+      - ./volumes/postgres/data:/var/lib/postgresql/data:rw
     tmpfs:
       - /tmp:size=64m,noexec,nosuid
       - /var/run/postgresql:size=64m,noexec,nosuid
@@ -75,12 +75,12 @@ services:
       - egress
       - mail
     volumes:
-      - ../.deploy/volumes/mattermost/config:/mattermost/config:rw
-      - ../.deploy/volumes/mattermost/data:/mattermost/data:rw
-      - ../.deploy/volumes/mattermost/logs:/mattermost/logs:rw
-      - ../.deploy/volumes/mattermost/plugins:/mattermost/plugins:rw
-      - ../.deploy/volumes/mattermost/client-plugins:/mattermost/client/plugins:rw
-      - ../.deploy/volumes/mattermost/bleve-indexes:/mattermost/bleve-indexes:rw
+      - ./volumes/mattermost/config:/mattermost/config:rw
+      - ./volumes/mattermost/data:/mattermost/data:rw
+      - ./volumes/mattermost/logs:/mattermost/logs:rw
+      - ./volumes/mattermost/plugins:/mattermost/plugins:rw
+      - ./volumes/mattermost/client-plugins:/mattermost/client/plugins:rw
+      - ./volumes/mattermost/bleve-indexes:/mattermost/bleve-indexes:rw
     tmpfs:
       - /tmp:size=128m,noexec,nosuid
       - /var/tmp:size=8m,noexec,nosuid
@@ -178,8 +178,8 @@ services:
       - "0.0.0.0:443:443"
       - "0.0.0.0:443:443/udp"
     volumes:
-      - ../.deploy/volumes/caddy/data:/data:rw
-      - ../.deploy/volumes/caddy/config:/config:rw
+      - ./volumes/caddy/data:/data:rw
+      - ./volumes/caddy/config:/config:rw
     tmpfs:
       - /tmp:size=64m,noexec,nosuid
     environment:
@@ -222,7 +222,7 @@ services:
       DKIM_SELECTOR: mail
       TZ: ${TZ}
     volumes:
-      - ../.deploy/volumes/postfix/dkim:/etc/opendkim/keys:rw
+      - ./volumes/postfix/dkim:/etc/opendkim/keys:rw
     networks:
       - mail
       - egress
