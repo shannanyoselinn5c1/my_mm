@@ -25,7 +25,6 @@
 	reverse_proxy mattermost:8065 {
 		header_up Host {host}
 		header_up X-Real-IP {remote_host}
-		header_up X-Forwarded-For {remote_host}
 		flush_interval -1
 		transport http {
 			keepalive 30s
